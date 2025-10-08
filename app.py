@@ -269,10 +269,7 @@ def StockPage():
                 sell_price = st.number_input("Sell Price (per unit)", min_value=0.01, format="%.2f", key="stock_sell_price")
             with col_s3:
                 quantity = st.number_input("Stock Quantity", min_value=1, step=1, key="stock_quantity")
-
-            # CONFIRM SUBMIT BUTTON IS HERE
-            confirm_add = st.form_submit_button("Confirm Add Product")
-            
+                st.form_submit_button()
             if confirm_add:
                 if product_name and buy_price > 0 and sell_price > 0 and quantity > 0:
                     new_product = {
