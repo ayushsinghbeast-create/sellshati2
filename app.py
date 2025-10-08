@@ -146,7 +146,7 @@ def RegistrationPage():
             ["Retail Store", "Online E-commerce", "Service Provider", "Manufacturing", "Other"]
         )
 
-        # CONFIRM SUBMIT BUTTON IS HERE
+        # Confirm submit button is correctly inside the form
         confirm_register = st.form_submit_button("Confirm Register")
         
         if confirm_register:
@@ -228,7 +228,7 @@ def DashboardPage():
                     if quantity_sold > quantity_available:
                         st.error("Error: Quantity sold exceeds stock availability!")
                     else:
-                        # Calculation logic remains the same
+                        # Calculation logic
                         profit = (sale_price - buy_price) * quantity_sold
                         
                         # 1. Update Sales Data
@@ -248,7 +248,7 @@ def DashboardPage():
                         st.session_state.stock_data.loc[stock_index, 'Sales Count'] = st.session_state.stock_data.loc[stock_index, 'Sales Count'] + quantity_sold
                         
                         st.success(f"Sale confirmed! {quantity_sold} x {selected_product_name} sold. Profit: ₹{profit:.2f}")
-                        st.experimental_rerun() # Rerun to update metrics immediately
+                        st.experimental_rerun() 
             else:
                 st.warning("Please select a product.")
 
@@ -280,7 +280,7 @@ def StockPage():
                         'Buy Price': buy_price,
                         'Sell Price': sell_price,
                         'Quantity': quantity,
-                        'Sales Count': 0 # Initialize sales count
+                        'Sales Count': 0 
                     }
                     # Check if product already exists
                     if product_name in st.session_state.stock_data['Product Name'].tolist():
@@ -288,7 +288,7 @@ def StockPage():
                     else:
                         st.session_state.stock_data = pd.concat([st.session_state.stock_data, pd.DataFrame([new_product])], ignore_index=True)
                         st.success(f"Product '{product_name}' added to stock!")
-                        st.experimental_rerun() # Rerun to update table
+                        st.experimental_rerun() 
                 else:
                     st.error("Please ensure all fields are filled correctly (prices and quantity must be positive).")
 
@@ -333,20 +333,14 @@ def BillPage():
         st.warning("Please add some products to your Stock first to create a bill.")
         return
 
-    # Form 1: Bill Metadata (Customer details)
-    with st.form("bill_metadata_form"):
-        st.text_input("Business Name (Auto-filled)", value=business_name, disabled=True)
-        customer_name = st.text_input("Customer Name", placeholder="e.g., Aman Kumar", key="bill_customer_name")
-        selling_date = st.date_input("Selling Date", value=datetime.date.today(), key="bill_selling_date")
-        
-        # We need a submit button for the metadata form, but since the logic below uses the same variables, 
-        # we'll rely on the final form for submission if no other actions are taken. 
-        # We use a placeholder to avoid the "missing submit button" warning if the logic below is complex.
-        # st.form_submit_button("Update Customer Details", disabled=True) # Commenting out to simplify flow
+    # Removed the unnecessary st.form block around customer details to prevent 'missing submit button' warning
+    st.text_input("Business Name (Auto-filled)", value=business_name, disabled=True)
+    customer_name = st.text_input("Customer Name", placeholder="e.g., Aman Kumar", key="bill_customer_name")
+    selling_date = st.date_input("Selling Date", value=datetime.date.today(), key="bill_selling_date")
 
     st.markdown("### Product Items")
     
-    # Item Addition Logic (outside the main form, or using a regular button inside a form for responsiveness)
+    # Item Addition Logic (Uses regular button)
     col_i1, col_i2, col_i3, col_i4 = st.columns([4, 2, 1, 1])
     
     new_product = col_i1.selectbox("Select Product", options=['-- Add Product --'] + stock_names, key="new_product_select")
@@ -364,7 +358,6 @@ def BillPage():
             # Check for quantity against stock
             quantity_available = st.session_state.stock_data[st.session_state.stock_data['Product Name'] == new_product]['Quantity'].iloc[0]
             
-            # Simple check for existing items in current bill
             qty_already_added = sum(item['qty'] for item in st.session_state.bill_items if item['name'] == new_product)
             
             if new_qty + qty_already_added > quantity_available:
@@ -376,8 +369,7 @@ def BillPage():
                     'price': item_price,
                     'total': new_qty * item_price
                 })
-                # Re-run is not needed here if item addition is handled locally, 
-                # but we'll use it to clear the selectbox/qty for a smoother flow.
+                # Re-run is used to clear the selectbox/qty for a smoother flow.
                 st.experimental_rerun()
         else:
             st.warning("Please select a valid product to add.")
@@ -392,15 +384,17 @@ def BillPage():
         grand_total = bill_df['Total (₹)'].sum()
         st.success(f"**Grand Total:** ₹{grand_total:.2f}")
 
-        # Form 2: Final Bill Submission
+        # Form 2: Final Bill Submission (with submit button)
         with st.form("final_bill_submission_form"):
             st.write("Click below to finalize, save, and generate the bill.")
+            
             # CONFIRM SUBMIT BUTTON IS HERE
             generate_bill_submit = st.form_submit_button("Generate & Save Bill")
             
             if generate_bill_submit:
                 if not customer_name:
-                    st.error("Please enter the customer's name in the form above.")
+                    # Use st.form_submit_button's return value to check if submitted
+                    st.error("Please ensure the customer's name is entered.")
                 else:
                     # 1. Prepare Bill Content (Simulate PDF/Text Output)
                     bill_content = f"""
@@ -455,7 +449,7 @@ def BillPage():
                     # 4. Clear temporary bill items
                     st.session_state.bill_items = []
                     st.success("Bill saved to history and stock updated.")
-                    st.experimental_rerun() # Rerun to clear the bill items and refresh
+                    st.experimental_rerun() 
 
     else:
         st.info("No items added to the current bill. Please add products above.")
