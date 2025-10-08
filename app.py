@@ -59,7 +59,7 @@ st.markdown("""
         font-weight: bold;
         color: var(--primary-color);
     }
-
+    
     /* Colored highlights for metrics */
     .color-1 { border-left: 5px solid #1E90FF; } /* Blue - Sales */
     .color-2 { border-left: 5px solid #3CB371; } /* Medium Sea Green - Profit */
@@ -86,6 +86,8 @@ if 'sales_data' not in st.session_state:
     st.session_state.sales_data = pd.DataFrame(columns=['Date', 'Product Name', 'Quantity Sold', 'Sale Price', 'Buy Price', 'Profit'])
 if 'bill_history' not in st.session_state:
     st.session_state.bill_history = []
+if 'bill_items' not in st.session_state:
+    st.session_state.bill_items = []
 
 
 # --- 2. CORE FUNCTIONS (DATA MANIPULATION) ---
@@ -104,7 +106,7 @@ def calculate_metrics(df_sales):
     metrics = {
         'Today Sales': today_sales['Sale Price'].sum(),
         'Today Profit': today_sales['Profit'].sum(),
-        'Today Expenditure': today_sales['Buy Price'].sum(), # Assuming Buy Price is an expenditure for calculation simplicity
+        'Today Expenditure': today_sales['Buy Price'].sum(), 
         'Monthly Sales': monthly_sales['Sale Price'].sum(),
         'Monthly Profit': monthly_sales['Profit'].sum(),
         'Monthly Expenditure': monthly_sales['Buy Price'].sum(),
@@ -144,6 +146,7 @@ def RegistrationPage():
             ["Retail Store", "Online E-commerce", "Service Provider", "Manufacturing", "Other"]
         )
 
+        # CONFIRM SUBMIT BUTTON IS HERE
         confirm_register = st.form_submit_button("Confirm Register")
         
         if confirm_register:
@@ -164,51 +167,21 @@ def DashboardPage():
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.markdown(f"""
-        <div class="metric-box color-1">
-            <h3>Today Sales</h3>
-            <p>₹{metrics['Today Sales']:.2f}</p>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown(f"""<div class="metric-box color-1"><h3>Today Sales</h3><p>₹{metrics['Today Sales']:.2f}</p></div>""", unsafe_allow_html=True)
     with col2:
-        st.markdown(f"""
-        <div class="metric-box color-2">
-            <h3>Today Profit</h3>
-            <p>₹{metrics['Today Profit']:.2f}</p>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown(f"""<div class="metric-box color-2"><h3>Today Profit</h3><p>₹{metrics['Today Profit']:.2f}</p></div>""", unsafe_allow_html=True)
     with col3:
-        st.markdown(f"""
-        <div class="metric-box color-3">
-            <h3>Today Expenditure</h3>
-            <p>₹{metrics['Today Expenditure']:.2f}</p>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown(f"""<div class="metric-box color-3"><h3>Today Expenditure</h3><p>₹{metrics['Today Expenditure']:.2f}</p></div>""", unsafe_allow_html=True)
 
     # Row 2 for Monthly Metrics
     col4, col5, col6 = st.columns(3)
     
     with col4:
-        st.markdown(f"""
-        <div class="metric-box color-1">
-            <h3>Monthly Sales</h3>
-            <p>₹{metrics['Monthly Sales']:.2f}</p>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown(f"""<div class="metric-box color-1"><h3>Monthly Sales</h3><p>₹{metrics['Monthly Sales']:.2f}</p></div>""", unsafe_allow_html=True)
     with col5:
-        st.markdown(f"""
-        <div class="metric-box color-2">
-            <h3>Monthly Profit</h3>
-            <p>₹{metrics['Monthly Profit']:.2f}</p>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown(f"""<div class="metric-box color-2"><h3>Monthly Profit</h3><p>₹{metrics['Monthly Profit']:.2f}</p></div>""", unsafe_allow_html=True)
     with col6:
-        st.markdown(f"""
-        <div class="metric-box color-3">
-            <h3>Monthly Expenditure</h3>
-            <p>₹{metrics['Monthly Expenditure']:.2f}</p>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown(f"""<div class="metric-box color-3"><h3>Monthly Expenditure</h3><p>₹{metrics['Monthly Expenditure']:.2f}</p></div>""", unsafe_allow_html=True)
 
     st.markdown("---")
     
@@ -221,14 +194,14 @@ def DashboardPage():
         st.warning("Please add some products to your Stock first to record a sale.")
         return
 
-    # Use st.expander as a compact form, as st.popover can't contain a form submission that triggers state change reliably.
+    # Use st.expander as a compact form
     with st.expander("➕ Add Sales"):
         with st.form("add_sales_form", clear_on_submit=True):
             # 1. Search/Select Product
             selected_product_name = st.selectbox(
                 "Search Product (Select from Stock)",
                 options=[''] + stock_names,
-                key="sale_product_select"
+                key="sale_product_select_input"
             )
             
             if selected_product_name:
@@ -238,23 +211,24 @@ def DashboardPage():
                 col_p1, col_p2 = st.columns(2)
                 with col_p1:
                     buy_price = st.number_input(f"Buy Price (from stock: ₹{product_row['Buy Price']:.2f})", 
-                                                value=product_row['Buy Price'], min_value=0.01)
+                                                value=product_row['Buy Price'], min_value=0.01, key="sale_buy_price")
                 with col_p2:
                     sale_price = st.number_input(f"Selling Price (from stock: ₹{product_row['Sell Price']:.2f})", 
-                                                 value=product_row['Sell Price'], min_value=0.01)
+                                                 value=product_row['Sell Price'], min_value=0.01, key="sale_sell_price")
                 
                 # Quantity and Stock Check
                 quantity_available = product_row['Quantity']
                 st.info(f"Quantity in Stock: {quantity_available}")
-                quantity_sold = st.number_input("Quantity Sold", min_value=1, max_value=quantity_available, value=1)
+                quantity_sold = st.number_input("Quantity Sold", min_value=1, max_value=int(quantity_available), value=1, step=1, key="sale_qty")
                 
+                # CONFIRM SUBMIT BUTTON IS HERE
                 confirm_sale = st.form_submit_button("Confirm Sale")
                 
                 if confirm_sale:
                     if quantity_sold > quantity_available:
                         st.error("Error: Quantity sold exceeds stock availability!")
                     else:
-                        # Calculate profit
+                        # Calculation logic remains the same
                         profit = (sale_price - buy_price) * quantity_sold
                         
                         # 1. Update Sales Data
@@ -290,12 +264,13 @@ def StockPage():
             
             col_s1, col_s2, col_s3 = st.columns(3)
             with col_s1:
-                buy_price = st.number_input("Buy Price (per unit)", min_value=0.01, format="%.2f")
+                buy_price = st.number_input("Buy Price (per unit)", min_value=0.01, format="%.2f", key="stock_buy_price")
             with col_s2:
-                sell_price = st.number_input("Sell Price (per unit)", min_value=0.01, format="%.2f")
+                sell_price = st.number_input("Sell Price (per unit)", min_value=0.01, format="%.2f", key="stock_sell_price")
             with col_s3:
-                quantity = st.number_input("Stock Quantity", min_value=1, step=1)
+                quantity = st.number_input("Stock Quantity", min_value=1, step=1, key="stock_quantity")
 
+            # CONFIRM SUBMIT BUTTON IS HERE
             confirm_add = st.form_submit_button("Confirm Add Product")
             
             if confirm_add:
@@ -341,8 +316,7 @@ def StockPage():
         'Quantity': 'Available Stock'
     }), use_container_width=True, hide_index=True)
     
-    # Simple edit/delete (using buttons next to the table - Streamlit doesn't support easy row-by-row edit/delete outside custom components)
-    st.caption("To edit or delete, please manage the data outside this view in a real database, or refresh the app to clear changes (in this demo).")
+    st.caption("Note: Changes made in the stock are temporary in this demo (uses session state).")
 
 
 def BillPage():
@@ -359,66 +333,77 @@ def BillPage():
         st.warning("Please add some products to your Stock first to create a bill.")
         return
 
-    with st.form("bill_generator_form", clear_on_submit=True):
+    # Form 1: Bill Metadata (Customer details)
+    with st.form("bill_metadata_form"):
         st.text_input("Business Name (Auto-filled)", value=business_name, disabled=True)
-        customer_name = st.text_input("Customer Name", placeholder="e.g., Aman Kumar")
-        selling_date = st.date_input("Selling Date", value=datetime.date.today())
-
-        st.markdown("### Product Items")
+        customer_name = st.text_input("Customer Name", placeholder="e.g., Aman Kumar", key="bill_customer_name")
+        selling_date = st.date_input("Selling Date", value=datetime.date.today(), key="bill_selling_date")
         
-        # Product selector logic
-        if 'bill_items' not in st.session_state:
-            st.session_state.bill_items = []
+        # We need a submit button for the metadata form, but since the logic below uses the same variables, 
+        # we'll rely on the final form for submission if no other actions are taken. 
+        # We use a placeholder to avoid the "missing submit button" warning if the logic below is complex.
+        # st.form_submit_button("Update Customer Details", disabled=True) # Commenting out to simplify flow
 
-        item_col1, item_col2, item_col3 = st.columns([4, 2, 1])
-        
-        # Add new product logic
-        new_product = item_col1.selectbox("Select Product", options=['-- Add Product --'] + stock_names, key="new_product_select")
-        new_qty = item_col2.number_input("Quantity", min_value=1, value=1, key="new_qty_input")
-        
-        # Get prices for selected product
-        item_price = 0
-        if new_product in stock_names:
-            product_row = st.session_state.stock_data[st.session_state.stock_data['Product Name'] == new_product].iloc[0]
-            item_price = product_row['Sell Price']
-            item_col3.metric(label="Unit Price (₹)", value=f"₹{item_price:.2f}")
+    st.markdown("### Product Items")
+    
+    # Item Addition Logic (outside the main form, or using a regular button inside a form for responsiveness)
+    col_i1, col_i2, col_i3, col_i4 = st.columns([4, 2, 1, 1])
+    
+    new_product = col_i1.selectbox("Select Product", options=['-- Add Product --'] + stock_names, key="new_product_select")
+    new_qty = col_i2.number_input("Quantity", min_value=1, value=1, key="new_qty_input")
+    
+    # Get prices for selected product
+    item_price = 0.0
+    if new_product in stock_names:
+        product_row = st.session_state.stock_data[st.session_state.stock_data['Product Name'] == new_product].iloc[0]
+        item_price = product_row['Sell Price']
+        col_i3.metric(label="Unit Price (₹)", value=f"₹{item_price:.2f}")
 
-        if st.button("Add Item to Bill", key="add_item_btn"):
-            if new_product != '-- Add Product --':
-                # Check for quantity against stock
-                quantity_available = st.session_state.stock_data[st.session_state.stock_data['Product Name'] == new_product]['Quantity'].iloc[0]
-                if new_qty > quantity_available:
-                    st.error(f"Cannot add: Only {quantity_available} units of {new_product} available in stock.")
-                else:
-                    st.session_state.bill_items.append({
-                        'name': new_product,
-                        'qty': new_qty,
-                        'price': item_price,
-                        'total': new_qty * item_price
-                    })
-                    st.experimental_rerun()
-
-        # Display current bill items
-        if st.session_state.bill_items:
-            bill_df = pd.DataFrame(st.session_state.bill_items)
-            bill_df = bill_df.rename(columns={'name': 'Product', 'qty': 'Qty', 'price': 'Unit Price (₹)', 'total': 'Total (₹)'})
-            st.dataframe(bill_df, use_container_width=True, hide_index=True)
+    if col_i4.button("Add Item", key="add_item_btn"):
+        if new_product != '-- Add Product --':
+            # Check for quantity against stock
+            quantity_available = st.session_state.stock_data[st.session_state.stock_data['Product Name'] == new_product]['Quantity'].iloc[0]
             
-            grand_total = bill_df['Total (₹)'].sum()
-            st.success(f"**Grand Total:** ₹{grand_total:.2f}")
-
-        generate_bill_submit = st.form_submit_button("Generate & Save Bill")
-        
-        if generate_bill_submit:
-            if not customer_name:
-                st.error("Please enter the customer's name.")
-            elif not st.session_state.bill_items:
-                st.error("Please add at least one item to the bill.")
+            # Simple check for existing items in current bill
+            qty_already_added = sum(item['qty'] for item in st.session_state.bill_items if item['name'] == new_product)
+            
+            if new_qty + qty_already_added > quantity_available:
+                st.error(f"Cannot add: Adding {new_qty} units exceeds stock availability ({quantity_available} total available).")
             else:
-                # 1. Prepare Bill Content (Simulate PDF/Text Output)
-                grand_total = pd.DataFrame(st.session_state.bill_items)['total'].sum()
-                
-                bill_content = f"""
+                st.session_state.bill_items.append({
+                    'name': new_product,
+                    'qty': new_qty,
+                    'price': item_price,
+                    'total': new_qty * item_price
+                })
+                # Re-run is not needed here if item addition is handled locally, 
+                # but we'll use it to clear the selectbox/qty for a smoother flow.
+                st.experimental_rerun()
+        else:
+            st.warning("Please select a valid product to add.")
+
+    
+    # Display current bill items
+    if st.session_state.bill_items:
+        bill_df = pd.DataFrame(st.session_state.bill_items)
+        bill_df = bill_df.rename(columns={'name': 'Product', 'qty': 'Qty', 'price': 'Unit Price (₹)', 'total': 'Total (₹)'})
+        st.dataframe(bill_df, use_container_width=True, hide_index=True)
+        
+        grand_total = bill_df['Total (₹)'].sum()
+        st.success(f"**Grand Total:** ₹{grand_total:.2f}")
+
+        # Form 2: Final Bill Submission
+        with st.form("final_bill_submission_form"):
+            st.write("Click below to finalize, save, and generate the bill.")
+            # CONFIRM SUBMIT BUTTON IS HERE
+            generate_bill_submit = st.form_submit_button("Generate & Save Bill")
+            
+            if generate_bill_submit:
+                if not customer_name:
+                    st.error("Please enter the customer's name in the form above.")
+                else:
+                    # 1. Prepare Bill Content (Simulate PDF/Text Output)
+                    bill_content = f"""
 ## SellSathi Invoice - {business_name}
 
 **Invoice Date:** {selling_date}
@@ -430,37 +415,51 @@ def BillPage():
 | Product | Quantity | Unit Price (₹) | Total (₹) |
 | :--- | :---: | :---: | :---: |
 """
-                for item in st.session_state.bill_items:
-                    bill_content += f"| {item['name']} | {item['qty']} | {item['price']:.2f} | {item['total']:.2f} |\n"
-                
-                bill_content += f"\n---"
-                bill_content += f"\n**GRAND TOTAL: ₹{grand_total:.2f}**"
-                bill_content += "\n\n*Thank you for your business!*"
+                    for item in st.session_state.bill_items:
+                        bill_content += f"| {item['name']} | {item['qty']} | {item['price']:.2f} | {item['total']:.2f} |\n"
+                    
+                    bill_content += f"\n---"
+                    bill_content += f"\n**GRAND TOTAL: ₹{grand_total:.2f}**"
+                    bill_content += "\n\n*Thank you for your business!*"
 
-                st.markdown(bill_content)
-                
-                # 2. Save to History
-                bill_record = {
-                    'bill_id': random.randint(1000, 9999),
-                    'date': str(selling_date),
-                    'customer': customer_name,
-                    'total': grand_total,
-                    'items': st.session_state.bill_items # Save detailed items
-                }
-                st.session_state.bill_history.append(bill_record)
-                
-                # 3. Provide Download Button
-                st.download_button(
-                    label="Download Invoice (Text/PDF Mock)",
-                    data=bill_content,
-                    file_name=f"invoice_{selling_date}_{bill_record['bill_id']}.txt",
-                    mime="text/plain"
-                )
+                    st.markdown(bill_content)
+                    
+                    # 2. Save to History and Update Stock (Assuming the sale is finalized here)
+                    bill_record = {
+                        'bill_id': random.randint(1000, 9999),
+                        'date': str(selling_date),
+                        'customer': customer_name,
+                        'total': grand_total,
+                        'items': st.session_state.bill_items 
+                    }
+                    st.session_state.bill_history.append(bill_record)
+                    
+                    # Update stock based on bill items
+                    for item in st.session_state.bill_items:
+                        product_name = item['name']
+                        quantity_sold = item['qty']
+                        
+                        stock_index = st.session_state.stock_data[st.session_state.stock_data['Product Name'] == product_name].index[0]
+                        st.session_state.stock_data.loc[stock_index, 'Quantity'] -= quantity_sold
+                        st.session_state.stock_data.loc[stock_index, 'Sales Count'] = st.session_state.stock_data.loc[stock_index, 'Sales Count'] + quantity_sold
 
-                # 4. Clear temporary bill items
-                st.session_state.bill_items = []
-                st.success("Bill saved to history and ready for download.")
-                
+
+                    # 3. Provide Download Button
+                    st.download_button(
+                        label="Download Invoice (Text/PDF Mock)",
+                        data=bill_content,
+                        file_name=f"invoice_{selling_date}_{bill_record['bill_id']}.txt",
+                        mime="text/plain"
+                    )
+
+                    # 4. Clear temporary bill items
+                    st.session_state.bill_items = []
+                    st.success("Bill saved to history and stock updated.")
+                    st.experimental_rerun() # Rerun to clear the bill items and refresh
+
+    else:
+        st.info("No items added to the current bill. Please add products above.")
+        
     st.markdown("---")
     st.subheader("Bill History")
     if st.session_state.bill_history:
@@ -491,7 +490,7 @@ def AnalysisPage():
         top_sellers = product_sales.head(3)
         if not top_sellers.empty:
             for index, row in top_sellers.iterrows():
-                st.success(f"🥇 {row['Product Name']} - {row['Quantity Sold']} units sold")
+                st.success(f"🥇 **{row['Product Name']}** - {row['Quantity Sold']} units sold")
         else:
             st.info("Not enough data to determine top sellers.")
 
@@ -500,7 +499,7 @@ def AnalysisPage():
         least_sellers = product_sales.tail(3).sort_values(by='Quantity Sold', ascending=True)
         if not least_sellers.empty:
             for index, row in least_sellers.iterrows():
-                st.warning(f"📉 {row['Product Name']} - {row['Quantity Sold']} units sold")
+                st.warning(f"📉 **{row['Product Name']}** - {row['Quantity Sold']} units sold")
         else:
             st.info("Not enough data to determine least sellers.")
             
@@ -561,10 +560,11 @@ def main_app():
         # Simple Logout (Resets session state)
         if st.button("Logout"):
             st.session_state.logged_in = False
-            st.session_state.user_data = {}
-            st.session_state.stock_data = pd.DataFrame(columns=['Product Name', 'Buy Price', 'Sell Price', 'Quantity', 'Sales Count'])
-            st.session_state.sales_data = pd.DataFrame(columns=['Date', 'Product Name', 'Quantity Sold', 'Sale Price', 'Buy Price', 'Profit'])
-            st.session_state.bill_history = []
+            # Reset all session state variables upon logout
+            keys_to_reset = ['user_data', 'stock_data', 'sales_data', 'bill_history', 'bill_items']
+            for key in keys_to_reset:
+                if key in st.session_state:
+                    del st.session_state[key]
             st.experimental_rerun()
             
 
